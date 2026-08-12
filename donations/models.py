@@ -21,7 +21,6 @@ class Donation(models.Model):
     note = models.CharField(max_length=255, blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
-
     tx_ref = models.CharField(max_length=100, unique=True, default=generate_tx_ref)
     chapa_reference = models.CharField(max_length=100, blank=True)
 

@@ -1,9 +1,12 @@
+from django.db import transaction
+from django.db.models import F
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from causes.models import Cause
 from donations.models import Donation
 from donations.serializers import CreateDonationSerializer, DonationSerializer
 from donations.chapa_client import initialize_transaction, verify_transaction, ChapaError
@@ -12,15 +15,27 @@ FRONTEND_BASE_URL = "http://localhost:5173"
 BACKEND_BASE_URL = "http://127.0.0.1:8000"
 
 
-def _mark_paid_if_successful(donation, result):
-    if (
+def _mark_paid_if_successful(tx_ref, result):
+    if not (
         result.get("status") == "success"
         and result.get("data", {}).get("status") == "success"
     ):
+        return Donation.objects.get(tx_ref=tx_ref)
+
+    with transaction.atomic():
+        donation = Donation.objects.select_for_update().get(tx_ref=tx_ref)
+        if donation.status == "paid":
+            return donation
+
         donation.status = "paid"
         donation.chapa_reference = result["data"].get("reference", "")
         donation.paid_at = timezone.now()
         donation.save()
+
+        Cause.objects.filter(pk=donation.cause_id).update(
+            raised_amount=F("raised_amount") + donation.amount
+        )
+
     return donation
 
 
@@ -64,9 +79,9 @@ class ChapaWebhookView(APIView):
         if not tx_ref:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        donation = get_object_or_404(Donation, tx_ref=tx_ref)
+        get_object_or_404(Donation, tx_ref=tx_ref)
         result = verify_transaction(tx_ref)
-        _mark_paid_if_successful(donation, result)
+        _mark_paid_if_successful(tx_ref, result)
 
         return Response(status=status.HTTP_200_OK)
 
@@ -77,6 +92,6 @@ class VerifyDonationView(APIView):
 
         if donation.status != "paid":
             result = verify_transaction(tx_ref)
-            _mark_paid_if_successful(donation, result)
+            donation = _mark_paid_if_successful(tx_ref, result)
 
         return Response(DonationSerializer(donation).data)

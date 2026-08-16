@@ -10,6 +10,8 @@ from .views import (
     CreateCustomAvailabilityView,
     MyCustomAvailabilityView,
     DeleteCustomAvailabilityView,
+    AppointmentPaymentWebhookView,
+    VerifyAppointmentPaymentView,
 )
 urlpatterns=[
     path("availability/", CreateAvailabilityView.as_view(),),
@@ -21,4 +23,6 @@ urlpatterns=[
     path("doctors/<int:doctor_id>/availability/", DoctorAvailabilityView.as_view()),
     path("doctors/<int:doctor_id>/booked-slots/", DoctorBookedSlotsView.as_view()),
     path("book/", CreateAppointmentView.as_view()),
+    path("payments/webhook/", AppointmentPaymentWebhookView.as_view()),
+    path("payments/verify/<str:tx_ref>/", VerifyAppointmentPaymentView.as_view()),
 ]

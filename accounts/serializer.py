@@ -89,10 +89,17 @@ class DoctorListSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(source="user.last_name")
     specialty = serializers.CharField(source="doctor.get_doctor_type_display")
     clinic = serializers.CharField(source="employer")
+    fee_enabled = serializers.BooleanField(source="doctor.fee_enabled")
+    fee_amount = serializers.DecimalField(
+        source="doctor.fee_amount", max_digits=8, decimal_places=2, allow_null=True
+    )
 
     class Meta:
         model = ProviderProfile
-        fields = ["id", "first_name", "last_name", "specialty", "clinic"]
+        fields = [
+            "id", "first_name", "last_name", "specialty", "clinic",
+            "fee_enabled", "fee_amount",
+        ]
 
 class GetUserSerializer(serializers.ModelSerializer):
 

@@ -49,6 +49,13 @@ class Appointment(models.Model):
         ("cancelled", "Cancelled"),
     ]
 
+    PAYMENT_STATUS_CHOICES = [
+        ("not_required", "Not Required"),
+        ("pending", "Pending"),
+        ("paid", "Paid"),
+        ("failed", "Failed"),
+    ]
+
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name="appointments")
     date = models.DateField()
     start_time = models.TimeField()
@@ -57,8 +64,17 @@ class Appointment(models.Model):
     reason_note = models.CharField(max_length=255, blank=True)
     patient_name = models.CharField(max_length=100)
     patient_phone = models.CharField(max_length=20)
+    patient_email = models.EmailField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="upcoming")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    fee_amount = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    payment_status = models.CharField(
+        max_length=20, choices=PAYMENT_STATUS_CHOICES, default="not_required"
+    )
+    tx_ref = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    chapa_reference = models.CharField(max_length=100, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
